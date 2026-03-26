@@ -534,13 +534,16 @@ export class RSVPController extends EventTarget {
     this.emitStateChange();
   }
 
-  loadNextPageContent(retryCount = 0): void {
+  loadNextPageContent(retryCount = 0, startCfi?: string): void {
     this.clearPositionFromStorage();
 
     const words = this.extractWordsWithRanges();
     if (words.length === 0) {
       if (retryCount < 3) {
-        setTimeout(() => this.loadNextPageContent(retryCount + 1), 200 * (retryCount + 1));
+        setTimeout(
+          () => this.loadNextPageContent(retryCount + 1, startCfi),
+          200 * (retryCount + 1),
+        );
         return;
       }
       this.pause();
@@ -549,11 +552,19 @@ export class RSVPController extends EventTarget {
 
     const wasPlaying = this.state.playing;
 
+    let startIndex = 0;
+    if (startCfi) {
+      const cfiIndex = this.findWordIndexByCfi(words, startCfi);
+      if (cfiIndex >= 0) {
+        startIndex = cfiIndex;
+      }
+    }
+
     this.state = {
       ...this.state,
       words,
-      currentIndex: 0,
-      progress: 0,
+      currentIndex: startIndex,
+      progress: words.length > 0 ? (startIndex / words.length) * 100 : 0,
       resumedFromIndex: null,
       playing: false,
     };
